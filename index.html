@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="מלאי">
+<meta name="theme-color" content="#1fa855">
+<link rel="manifest" href="manifest.webmanifest">
+<title>מלאי</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#eef1f4;--card:#fff;--ink:#16202a;--muted:#5f6b76;--line:#d9dfe5;--accent:#1fa855;--accent-ink:#fff;--chip:#e3e8ed;--warn:#c0392b;--warnbg:#fdecea;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161c;--card:#1a232b;--ink:#e8edf1;--muted:#93a0ab;--line:#2c3843;--accent:#2fc46b;--accent-ink:#06210f;--chip:#26313b;--warn:#ff8a7a;--warnbg:#3a2220;color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Rubik',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+main{max-width:560px;margin:0 auto;padding:16px 14px 130px}
+
+/* Tabs Bar */
+.tabs-bar { display: flex; background: var(--chip); border-radius: 12px; padding: 4px; margin-bottom: 16px; gap: 4px; }
+.tabs-bar button { flex: 1; background: transparent; border: none; padding: 10px; border-radius: 10px; font-size: 15px; font-weight: 600; color: var(--muted); cursor: pointer; transition: 0.2s; font-family: inherit; }
+.tabs-bar button.active { background: var(--card); color: var(--ink); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+/* Header */
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+h1{font-size:22px;font-weight:600;margin:0}
+.sub{color:var(--muted);font-size:13px}
+.hb{display:flex;gap:6px}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:14px;border-radius:10px;padding:7px 12px;cursor:pointer;font-family:inherit;}
+button.btn.hot{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button:disabled{opacity:.55}
+
+/* Ext Inputs (Manager & Notes) */
+.ext-input { width:100%; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-family: inherit; font-size: 15px; background: var(--card); color: var(--ink); outline:none; transition: border-color 0.2s; resize: none; overflow: hidden; }
+.ext-input:focus { border-color: var(--accent); }
+
+/* Search Box */
+.search-box { display: flex; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; margin-bottom: 16px; gap: 10px; transition: border-color 0.2s; }
+.search-box:focus-within { border-color: var(--accent); }
+.search-box input { flex: 1; border: none; background: transparent; outline: none; font-size: 15px; color: var(--ink); font-family: inherit; }
+.search-box svg { width: 20px; height: 20px; fill: var(--muted); flex-shrink: 0; }
+
+/* Categories & Items */
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+summary{display:flex;justify-content:space-between;align-items:center;padding:14px;font-weight:500;cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"‹";color:var(--muted);margin-inline-start:10px}
+details[open] summary::after{transform:rotate(-90deg)}
+.cn{flex:1}.cnt{color:var(--muted);font-size:13px;font-weight:400}
+.it{padding:10px 14px 12px;border-top:1px solid var(--line)}
+.it.short{background:var(--warnbg)}
+.top{display:flex;align-items:center;gap:5px;margin-bottom:7px}
+.nm{flex:1;font-weight:500}
+.sq{border:0;background:var(--chip);color:var(--ink);border-radius:9px;height:38px;min-width:38px;padding:0 8px;font:inherit;font-size:13px;cursor:pointer}
+.sq.pm{font-size:22px;line-height:1}
+.flag{color:var(--muted);width:38px;min-width:38px}
+.flag[aria-pressed="true"]{background:var(--warn);color:#fff}
+.sq.open[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.sq.yes[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.sq.end[aria-pressed="true"]{background:var(--ink);color:var(--bg);font-weight:600}
+.l2{display:flex;gap:6px;align-items:center}
+input, select{min-width:0;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:inherit;padding:9px 10px;outline:none}
+.l2 input{flex:1}
+.l2 .qty{flex:none;width:60px;text-align:center;font-weight:600;font-size:18px}
+.unit-select{flex:none;width:80px;font-size:13px;cursor:pointer}
+input:focus, select:focus{border-color:var(--accent)}
+h2{font-size:15px;font-weight:600;margin:22px 0 6px}
+pre{white-space:pre-wrap;word-break:break-word;margin:0;background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:14px;font:inherit;font-size:14px}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line);display:flex;gap:8px;justify-content:center; z-index:10;}
+.copy{flex:1;max-width:300px;border:0;border-radius:14px;padding:15px;background:var(--accent);color:var(--accent-ink);font-weight:600;cursor:pointer;font-family:inherit;font-size:17px;}
+.bar .btn{border-radius:14px;padding:0 14px}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s; z-index:20;}
+.toast.on{opacity:1;transform:translateX(-50%)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <!-- Tabs -->
+  <div class="tabs-bar">
+    <button id="tab-kitchen" onclick="switchView('kitchen')">🍳 מטבח</button>
+    <button id="tab-bar" onclick="switchView('bar')">🍻 בר</button>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div><h1 id="ttl"></h1><div class="sub" id="sync">טוען נתונים…</div></div>
+    <div class="hb"><button class="btn" id="upd">רענן 🔄</button></div>
+  </header>
+
+  <!-- Bar Specific Extras (Manager Name) -->
+  <div id="bar-header-extras" style="display:none; margin-bottom: 14px;">
+    <input type="text" id="bar-manager" placeholder="👤 אחראי סגירה (שם)..." class="ext-input">
+  </div>
+
+  <!-- Search Filter -->
+  <div class="search-box">
+    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    <input type="search" id="search-input" placeholder="חיפוש מהיר..." oninput="filterItems()">
+  </div>
+
+  <div id="cats"></div>
+
+  <!-- Bar Specific Extras (Special Notes at the bottom) -->
+  <div id="bar-footer-extras" style="display:none; margin-top: 14px; margin-bottom: 14px;">
+    <textarea id="bar-special-notes" placeholder="📝 הערות מיוחדות לסגירה..." class="ext-input" rows="1" style="min-height: 44px;"></textarea>
+  </div>
+
+  <h2>תצוגה מקדימה להודעה</h2><pre id="pv" dir="rtl"></pre>
+</main>
+
+<div class="bar">
+  <button class="btn" id="wa">שלח 💬</button>
+  <button class="copy" id="copy">העתק לוואטסאפ 📋</button>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="firebase-service.js"></script>
+<script>
+var $=function(id){return document.getElementById(id)};
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+function uid(){return Math.random().toString(36).slice(2,9)}
+function dstr(){var n=new Date();return n.getDate()+'.'+(n.getMonth()+1)}
+
+var state={cats:[]};
+var urlParams = new URLSearchParams(window.location.search);
+var currentView = urlParams.get('view') === 'bar' ? 'bar' : 'kitchen';
+
+var viewsConfig = {
+  kitchen: { file: 'hs.json', title: 'מלאי מטבח', fbNode: 'inventory', icon: '🍳' },
+  bar: { file: 'bar.json', title: 'מלאי בר', fbNode: 'inventoryBar', icon: '🍻' }
+};
+
+// Ext Inputs Init
+$('bar-manager').value = localStorage.getItem('barManager') || '';
+$('bar-manager').oninput = function() {
+  localStorage.setItem('barManager', this.value);
+  updateUI();
+};
+
+// Special Notes Init with Auto-Resize
+var notesEl = $('bar-special-notes');
+notesEl.value = localStorage.getItem('barSpecialNotes') || '';
+setTimeout(function(){
+  if(notesEl.value) {
+    notesEl.style.height = 'auto';
+    notesEl.style.height = notesEl.scrollHeight + 'px';
+  }
+}, 0);
+
+notesEl.oninput = function() {
+  this.style.height = 'auto';
+  this.style.height = this.scrollHeight + 'px';
+  localStorage.setItem('barSpecialNotes', this.value);
+  updateUI();
+};
+
+function switchView(view) {
+  if (view === currentView) return;
+  var newUrl = window.location.pathname + (view === 'bar' ? '?view=bar' : '');
+  window.history.pushState({path: newUrl}, '', newUrl);
+  currentView = view;
+  $('search-input').value = ''; 
+  init();
+}
+
+async function init(){
+  var cfg = viewsConfig[currentView];
+  
+  $('tab-kitchen').classList.toggle('active', currentView === 'kitchen');
+  $('tab-bar').classList.toggle('active', currentView === 'bar');
+  
+  // Show extras only on Bar view
+  $('bar-header-extras').style.display = currentView === 'bar' ? 'block' : 'none';
+  $('bar-footer-extras').style.display = currentView === 'bar' ? 'block' : 'none';
+  
+  $('ttl').textContent = cfg.title + ' ' + dstr();
+  document.title = cfg.title;
+
+  $('sync').textContent = 'טוען נתונים מרשת…';
+  try {
+    var res = await fetch(cfg.file + '?t=' + Date.now(), {cache:'no-store'});
+    var data = await res.json();
+    
+    state.cats = (data.cats || []).map(function(c){
+      return {
+        id: uid(),
+        e: c.e || '',
+        n: c.n || '',
+        open: false,
+        items: (c.items || []).map(function(i){
+          return { id: uid(), n: typeof i==='string'?i:i.n, q: null, o: false, f: false, y: false, u: 'יח', t: '', s: false };
+        })
+      };
+    });
+
+    var remoteItems = await fetchFromFirebase(cfg.fbNode);
+    if(remoteItems){
+      state.cats.forEach(function(c){
+        c.items.forEach(function(i){
+          var cleanKey = (c.n + '|' + i.n).replace(/[\.=#\$\[\]\/]/g, '_');
+          var val = remoteItems[cleanKey];
+          if(val){
+            i.q = val[0];
+            i.o = !!val[1];
+            i.f = !!val[2];
+            i.t = val[3] || '';
+            i.s = !!val[4];
+            i.y = !!val[5];
+            i.u = val[6] || 'יח';
+          }
+        });
+      });
+    }
+
+    $('sync').textContent = 'מסונכרן ✓';
+  } catch (e) {
+    $('sync').textContent = 'שגיאה בטעינת הנתונים ⚠';
+  }
+  build();
+}
+
+function qtxt(i){
+  var isBar = currentView === 'bar';
+  if(i.f) return isBar ? 'אין' : 'סוף';
+  if(i.y) return 'יש';
+  var parts = [];
+  if(i.q != null) parts.push(i.q + ' ' + (i.u === 'שקיות' ? 'שקיות' : "יח'"));
+  if(i.o) parts.push(i.q != null ? 'ופתוח' : 'פתוח');
+  if(i.t.trim()) parts.push(i.t.trim());
+  return parts.join(' ');
+}
+
+function filled(i){return i.q!=null||!!i.o||!!i.f||!!i.y||i.t.trim()!==''}
+
+function buildText(){
+  var cfg = viewsConfig[currentView];
+  var isBar = currentView === 'bar';
+  var out = [];
+
+  if (isBar) {
+    var mgr = $('bar-manager').value.trim();
+    var specNotes = $('bar-special-notes').value.trim();
+    
+    out.push(cfg.icon + ' ' + cfg.title + ' סגירה (' + dstr() + ')');
+    if(mgr) out.push('👤 אחראי סגירה: ' + mgr);
+    out.push('');
+
+    var openWines = [], missingWines = [];
+    var draftsAndGas = [], bottlesAndSoft = [], generalMissing = [], fruitsList = [];
+    
+    state.cats.forEach(function(c){
+      var isWine = c.n.includes('יין') || c.n.includes('יינות') || c.n.includes('רוזה') || c.n.includes('אדום') || c.n.includes('אדומים') || c.n.includes('לבן') || c.n.includes('לבנים');
+      var isDraft = c.n.includes('חביות') || c.n.includes('גז');
+      var isBottleOrSoft = c.n.includes('בקבוק') || c.n.includes('שתייה קלה');
+
+      c.items.forEach(function(i){
+        // בבר מכניסים לסיכום רק אם יש סימון כלשהו, או (בחביות) אם יש כמות
+        var isMarked = i.f || i.s || i.o || i.y || i.t.trim() !== '' || (isDraft && i.q != null);
+        if (!isMarked) return;
+
+        // בניית מחרוזת הסטטוסים עם פלוסים
+        var flags = [];
+        if (i.y && !isDraft) flags.push('יש');
+        if (i.f) flags.push('אין');
+        if (i.o) {
+          if (isDraft) flags.push('מחובר');
+          else if (isBottleOrSoft) flags.push('מה שבמגירה');
+          else flags.push('פתוח');
+        }
+        
+        var statusStr = flags.join(' + ');
+
+        // צירוף כמות לחביות
+        if (isDraft && i.q != null) {
+          if (statusStr) statusStr += ' + ' + i.q;
+          else statusStr = i.q.toString();
+        }
+        
+        var detail = '';
+        if (statusStr && i.t) {
+            detail = ' - ' + statusStr + ' - ' + i.t;
+        } else if (statusStr) {
+            detail = ' - ' + statusStr;
+        } else if (i.t) {
+            detail = ' - ' + i.t;
+        }
+
+        var isSpecificFruit = i.n === 'תפוזים' || i.n === 'לימונים' || i.n === 'מלפפונים' || i.n === 'נענע';
+
+        if (isWine) {
+          if (i.o) openWines.push(i.n + detail);
+          // אם סומן אין/אזהרה, או שיש הערה אבל ללא "יש" וללא "פתוח"
+          if (i.f || i.s || (!i.y && !i.o && i.t.trim() !== '')) {
+            missingWines.push(i.n + detail);
+          }
+        } else if (isDraft) {
+          draftsAndGas.push(i.n + detail);
+        } else if (isSpecificFruit) {
+          // פירות נכנסים אלא אם סומנו רק ב"יש" (וללא הערות)
+          if (i.f || i.s || i.o || (!i.y && i.t.trim() !== '')) {
+            fruitsList.push(i.n + detail);
+          }
+        } else if (isBottleOrSoft) {
+          // בירות ושתייה קלה הולכים לחוסרים כללי רק אם נבחר "אין", אזהרה ⚠, "מה שבמגירה", או הערה ללא "יש"
+          if (i.f || i.s || i.o || (!i.y && i.t.trim() !== '')) {
+            generalMissing.push(i.n + detail);
+          }
+        } else {
+          // שאר הדברים (אלכוהול רגיל, מונין וכו')
+          // נכנסים ל"חוסרים כללי" רק אם יש אין/אזהרה, או הערה (ללא 'יש'). מתעלמים נטו מ'פתוח'.
+          if (i.f || i.s || (!i.y && !i.o && i.t.trim() !== '')) {
+            generalMissing.push(i.n + detail);
+          }
+        }
+      });
+    });
+
+    out.push('🍷 *יין פתוח*');
+    if(openWines.length) openWines.forEach(function(w){ out.push('• ' + w); }); else out.push('אין יינות פתוחים');
+    out.push('');
+
+    out.push('🥂 *יין חסר*');
+    if(missingWines.length) missingWines.forEach(function(w){ out.push('• ' + w); }); else out.push('אין חוסרים');
+    out.push('');
+
+    out.push('🍺 *חביות מחוברות תקינות וגז*');
+    if(draftsAndGas.length) draftsAndGas.forEach(function(d){ out.push('• ' + d); }); else out.push('לא סומנו שינויים');
+    out.push('');
+
+    out.push('📝 *חוסרים כללי*');
+    if(generalMissing.length) generalMissing.forEach(function(w){ out.push('• ' + w); }); else out.push('הכל מלא');
+    out.push('');
+
+    out.push('🍋 *פירות*');
+    if(fruitsList.length) fruitsList.forEach(function(w){ out.push('• ' + w); }); else out.push('לא סומנו שינויים');
+
+    if (specNotes) {
+      out.push('');
+      out.push('📝 *הערות מיוחדות:*');
+      out.push(specNotes);
+    }
+
+  } else {
+    // פורמט מטבח רגיל
+    out = [cfg.icon + ' ' + cfg.title + ' - מסודר לפי קטגוריות (' + dstr() + ')'];
+    var short=[];
+    state.cats.forEach(function(c){
+      var f=c.items.filter(filled);
+      if(f.length){out.push('');out.push(c.e+' *'+c.n+'*');f.forEach(function(i){out.push('• '+i.n+' - '+qtxt(i))});}
+      c.items.forEach(function(i){if(i.s)short.push(filled(i)?i.n+' - '+qtxt(i):i.n)});
+    });
+    out.push('');out.push('——————————');out.push('📝 *סיכום חוסרים*');
+    if(short.length) { short.forEach(function(s){out.push(s)}); } else { out.push('אין חוסרים'); }
+  }
+
+  return out.join('\n');
+}
+
+var counts={}, saveTimeout = null;
+
+async function updateAndSync(){
+  state.cats.forEach(function(c){
+    var f=c.items.filter(filled).length,s=c.items.filter(function(i){return i.s}).length;
+    if(counts[c.id])counts[c.id].textContent=f+'/'+c.items.length+(s?' · ⚠ '+s:'');
+  });
+  $('pv').textContent=buildText();
+
+  clearTimeout(saveTimeout);
+  $('sync').textContent = 'ממתין לשמירה…';
+  var fbNode = viewsConfig[currentView].fbNode;
+  saveTimeout = setTimeout(async function(){
+    $('sync').textContent = 'שומר ל-Firebase…';
+    var ok = await saveToFirebase(state.cats, fbNode);
+    $('sync').textContent = ok ? 'מסונכרן ✓' : 'שגיאה בשמירה ⚠';
+  }, 500);
+}
+
+function fmt(n){return n==null?'':String(n)}
+function r2(n){return Math.round(n*100)/100}
+
+function filterItems() {
+  var term = $('search-input').value.toLowerCase().trim();
+  state.cats.forEach(function(c) {
+    var catVisible = false;
+    c.items.forEach(function(i) {
+      var row = $('item-' + i.id);
+      if(row) {
+        var match = i.n.toLowerCase().includes(term);
+        row.style.display = match ? '' : 'none';
+        if(match) catVisible = true;
+      }
+    });
+    var catEl = $('cat-' + c.id);
+    if(catEl) {
+      catEl.style.display = (term === '' || catVisible) ? '' : 'none';
+      if(term !== '' && catVisible) catEl.open = true;
+    }
+  });
+}
+
+function build(){
+  counts={};var box=$('cats');box.innerHTML='';
+  var isBar = currentView === 'bar';
+  
+  state.cats.forEach(function(c){
+    var isWine = c.n.includes('יין') || c.n.includes('יינות') || c.n.includes('רוזה') || c.n.includes('אדום') || c.n.includes('אדומים') || c.n.includes('לבן') || c.n.includes('לבנים');
+    var isDraft = c.n.includes('חביות') || c.n.includes('גז');
+    var isBottleOrSoft = c.n.includes('בקבוק') || c.n.includes('שתייה קלה');
+    
+    var d=document.createElement('details');
+    d.id = 'cat-' + c.id;
+    d.open=!!c.open;
+    d.addEventListener('toggle',function(){c.open=d.open;});
+    
+    var sm=el('summary');sm.appendChild(el('span','cn',c.e+' '+c.n));
+    var cnt=el('span','cnt');sm.appendChild(cnt);counts[c.id]=cnt;d.appendChild(sm);
+    
+    c.items.forEach(function(it){
+      var isSpecificFruit = it.n === 'תפוזים' || it.n === 'לימונים' || it.n === 'מלפפונים' || it.n === 'נענע';
+      var r=el('div','it'),top=el('div','top');
+      r.id = 'item-' + it.id;
+      top.appendChild(el('span','nm',it.n));
+      
+      var en=el('button','sq end', isBar ? 'אין' : 'סוף');
+      top.appendChild(en);
+      
+      var yesBtn=el('button','sq yes','יש');
+      if(isBar && isDraft) yesBtn.style.display = 'none'; // מחיקת כפתור "יש" לחביות וגז בבר
+      top.appendChild(yesBtn);
+      
+      var opLabel = '+1 פתוח';
+      if (isBar) {
+        if (isDraft) opLabel = 'מחובר';
+        else if (isBottleOrSoft) opLabel = 'מה שבמגירה';
+        else opLabel = 'פתוח';
+      }
+      var op = el('button','sq open', opLabel);
+      top.appendChild(op);
+
+      var flag=el('button','sq flag','⚠');
+      flag.setAttribute('aria-label','חסר');
+      // הסתרת ה-⚠ בבר עבור יין מכל הסוגים, חביות ופירות ספציפיים
+      if (isBar && (isWine || isDraft || isSpecificFruit)) {
+        flag.style.display = 'none';
+      }
+      top.appendChild(flag);
+      
+      r.appendChild(top);
+      
+      var l2=el('div','l2');
+      
+      var q, unitSel, mi, pl;
+      
+      // השארת שדות כמות עבור המטבח *וגם* עבור החביות בבר
+      if (!isBar || isDraft) {
+        mi=el('button','sq pm','−');
+        pl=el('button','sq pm','+');
+        mi.setAttribute('aria-label','הפחת'); pl.setAttribute('aria-label','הוסף');
+        
+        q=document.createElement('input');
+        q.className='qty'; q.type='text'; q.setAttribute('inputmode','decimal'); q.setAttribute('aria-label','כמות'); q.placeholder='–'; q.value=fmt(it.q);
+        
+        unitSel=document.createElement('select');
+        unitSel.className='unit-select';
+        if (isBar && isDraft) unitSel.style.display = 'none'; // מחיקת בחירת יחידות לחביות בבר
+        
+        var opt1=document.createElement('option'); opt1.value='יח'; opt1.textContent='יחידות';
+        var opt2=document.createElement('option'); opt2.value='שקיות'; opt2.textContent='שקיות';
+        unitSel.appendChild(opt1); unitSel.appendChild(opt2);
+        unitSel.value = it.u || 'יח';
+        
+        l2.appendChild(pl);
+        l2.appendChild(q);
+        l2.appendChild(unitSel);
+        l2.appendChild(mi);
+      }
+      
+      var note=document.createElement('input'); 
+      note.placeholder= 'הערה...'; 
+      note.value=it.t; 
+      note.setAttribute('dir','auto');
+      
+      l2.appendChild(note);
+      r.appendChild(l2);
+      
+      function clearFlags(){
+        it.f = false;
+        it.y = false;
+        en.setAttribute('aria-pressed','false');
+        yesBtn.setAttribute('aria-pressed','false');
+      }
+
+      function syncUI(){
+        if (!isBar || isDraft) {
+          q.value=fmt(it.q);
+          if(unitSel) unitSel.value=it.u || 'יח';
+        }
+        op.setAttribute('aria-pressed',!!it.o);
+        r.classList.toggle('short',it.s);
+        flag.setAttribute('aria-pressed',it.s);
+        en.setAttribute('aria-pressed',!!it.f);
+        yesBtn.setAttribute('aria-pressed',!!it.y);
+      }
+      
+      if (!isBar || isDraft) {
+        pl.onclick=function(){clearFlags(); it.q=r2((it.q||0)+1); syncUI(); updateAndSync();};
+        mi.onclick=function(){clearFlags(); it.q=Math.max(0,r2((it.q||0)-1)); syncUI(); updateAndSync();};
+        
+        q.onfocus=function(){q.select()};
+        q.oninput=function(){
+          var v=q.value.trim().replace(',','.');
+          if(v==='') it.q=null;
+          else if(!isNaN(Number(v))){ it.q=Number(v); clearFlags(); }
+          updateAndSync();
+        };
+        q.onblur=syncUI;
+        
+        if (unitSel) {
+          unitSel.onchange=function(){
+            it.u = unitSel.value;
+            updateAndSync();
+          };
+        }
+      }
+      
+      op.onclick=function(){
+        it.o=!it.o;
+        // במטבח איפוס סטטוס, בבר מאפשר שילובים (מחובר + אין + 2 כמות וכו')
+        if(it.o && !isBar) { 
+           it.f=false; it.y=false; 
+           en.setAttribute('aria-pressed','false'); 
+           yesBtn.setAttribute('aria-pressed','false'); 
+        }
+        syncUI(); updateAndSync();
+      };
+      
+      note.oninput=function(){
+        it.t=note.value;
+        if(!isBar && it.t.trim()) clearFlags();
+        updateAndSync();
+      };
+      
+      en.onclick=function(){
+        it.f=!it.f;
+        if(it.f){ 
+          if(!isBar || isDraft) {
+             it.q=null; // איפוס כמות כשלוחצים אין
+          }
+          if(!isBar) {
+             it.t=''; note.value=''; 
+             op.setAttribute('aria-pressed','false');
+          }
+          it.y=false; yesBtn.setAttribute('aria-pressed','false'); 
+        }
+        syncUI(); updateAndSync();
+      };
+      
+      yesBtn.onclick=function(){
+        it.y=!it.y;
+        if(it.y){ 
+          if(!isBar) {
+             it.q=null; it.o=false; it.t=''; note.value=''; 
+             op.setAttribute('aria-pressed','false');
+          }
+          it.f=false; en.setAttribute('aria-pressed','false'); 
+        }
+        syncUI(); updateAndSync();
+      };
+      
+      flag.onclick=function(){
+        it.s=!it.s;
+        syncUI(); updateAndSync();
+      };
+      
+      syncUI(); d.appendChild(r);
+    });
+    box.appendChild(d);
+  });
+  
+  updateUI();
+  if($('search-input').value.trim() !== '') filterItems();
+}
+
+function updateUI(){
+  state.cats.forEach(function(c){
+    var f=c.items.filter(filled).length,s=c.items.filter(function(i){return i.s}).length;
+    if(counts[c.id])counts[c.id].textContent=f+'/'+c.items.length+(s?' · ⚠ '+s:'');
+  });
+  $('pv').textContent=buildText();
+}
+
+function toast(m){var t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(function(){t.classList.remove('on')},1800);}
+function fallbackCopy(txt){var ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}document.body.removeChild(ta);return ok;}
+
+$('copy').onclick=function(){
+  var txt=buildText(),ok='הועתק. אפשר להדביק בוואטסאפ.',bad='ההעתקה נכשלה. סמן את הטקסט ידנית.';
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){toast(ok)},function(){toast(fallbackCopy(txt)?ok:bad)});}
+  else toast(fallbackCopy(txt)?ok:bad);
+};
+$('wa').onclick=function(){window.open('https://wa.me/?text='+encodeURIComponent(buildText()),'_blank');};
+$('upd').onclick = function(){ init(); };
+
+init();
+</script>
+</body>
+</html>
