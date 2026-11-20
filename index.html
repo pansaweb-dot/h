@@ -89,6 +89,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
   <!-- Header -->
   <header>
     <div><h1 id="ttl"></h1><div class="sub" id="sync">טוען נתונים…</div></div>
+    <button class="btn" id="close-all">סגור הכל ⏶</button>
     <div class="hb"><button class="btn" id="upd">רענן 🔄</button></div>
   </header>
 
@@ -604,6 +605,13 @@ $('copy').onclick=function(){
 };
 $('wa').onclick=function(){window.open('https://wa.me/?text='+encodeURIComponent(buildText()),'_blank');};
 $('upd').onclick = function(){ init(); };
+$('close-all').onclick = function() {
+  state.cats.forEach(function(c) {
+    c.open = false;
+    var catEl = $('cat-' + c.id);
+    if (catEl) catEl.open = false;
+  });
+};
 
 init();
 </script>
