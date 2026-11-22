@@ -5,14 +5,14 @@ async function fetchFromFirebase(nodeName) {
     var r = await fetch(FB_BASE_URL + nodeName + '.json', { cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     var d = await r.json();
-    return d && typeof d === 'object' && d.items ? d.items : null;
+    return d && typeof d === 'object' && d.items ? d.items : {};
   } catch (e) {
     console.error('Firebase read failed:', e);
     return null;
   }
 }
 
-async function saveToFirebase(cats, nodeName) {
+function buildItemsMap(cats) {
   var m = {};
   cats.forEach(function(c) {
     c.items.forEach(function(i) {
@@ -23,7 +23,11 @@ async function saveToFirebase(cats, nodeName) {
       }
     });
   });
+  return m;
+}
 
+async function saveToFirebase(cats, nodeName) {
+  var m = buildItemsMap(cats);
   try {
     var r = await fetch(FB_BASE_URL + nodeName + '.json', {
       method: 'PUT',
