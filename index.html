@@ -38,7 +38,7 @@ button:disabled{opacity:.55}
 .ext-input:focus { border-color: var(--accent); }
 
 /* Search Box */
-.search-box { display: flex; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; margin-bottom: 16px; gap: 10px; transition: border-color 0.2s; }
+.search-box { position:sticky; top:8px; z-index:5; box-shadow:0 2px 8px rgba(0,0,0,.06); display: flex; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; margin-bottom: 16px; gap: 10px; transition: border-color 0.2s; }
 .search-box:focus-within { border-color: var(--accent); }
 .search-box input { flex: 1; border: none; background: transparent; outline: none; font-size: 15px; color: var(--ink); font-family: inherit; }
 .search-box svg { width: 20px; height: 20px; fill: var(--muted); flex-shrink: 0; }
@@ -89,8 +89,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
   <!-- Header -->
   <header>
     <div><h1 id="ttl"></h1><div class="sub" id="sync">טוען נתונים…</div></div>
-    <button class="btn" id="close-all">סגור הכל ⏶</button>
-    <div class="hb"><button class="btn" id="upd">רענן 🔄</button></div>
+    <div class="hb"><button class="btn" id="close-all">סגור הכל ⏶</button><button class="btn" id="upd">רענן 🔄</button></div>
   </header>
 
   <!-- Bar Specific Extras (Manager Name) -->
@@ -127,7 +126,7 @@ function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null
 function uid(){return Math.random().toString(36).slice(2,9)}
 function dstr(){var n=new Date();return n.getDate()+'.'+(n.getMonth()+1)}
 
-var state={cats:[]};
+var state={cats:[]}, initToken=0, pendingNode=null, pendingCats=null, saveTimeout=null;
 var urlParams = new URLSearchParams(window.location.search);
 var currentView = urlParams.get('view') === 'bar' ? 'bar' : 'kitchen';
 
@@ -162,6 +161,7 @@ notesEl.oninput = function() {
 
 function switchView(view) {
   if (view === currentView) return;
+  flushSave();
   var newUrl = window.location.pathname + (view === 'bar' ? '?view=bar' : '');
   window.history.pushState({path: newUrl}, '', newUrl);
   currentView = view;
@@ -182,48 +182,70 @@ async function init(){
   $('ttl').textContent = cfg.title + ' ' + dstr();
   document.title = cfg.title;
 
-  $('sync').textContent = 'טוען נתונים מרשת…';
+  await flushSave();
+  var myToken = ++initToken, node = cfg.fbNode;
+  $('sync').textContent = 'טוען נתונים…';
   try {
     var res = await fetch(cfg.file + '?t=' + Date.now(), {cache:'no-store'});
     var data = await res.json();
-    
+    if (myToken !== initToken) return;
+
     state.cats = (data.cats || []).map(function(c){
       return {
-        id: uid(),
-        e: c.e || '',
-        n: c.n || '',
-        open: false,
+        id: uid(), e: c.e || '', n: c.n || '', open: false,
         items: (c.items || []).map(function(i){
           return { id: uid(), n: typeof i==='string'?i:i.n, q: null, o: false, f: false, y: false, u: 'יח', t: '', s: false };
         })
       };
     });
 
-    var remoteItems = await fetchFromFirebase(cfg.fbNode);
-    if(remoteItems){
-      state.cats.forEach(function(c){
-        c.items.forEach(function(i){
-          var cleanKey = (c.n + '|' + i.n).replace(/[\.=#\$\[\]\/]/g, '_');
-          var val = remoteItems[cleanKey];
-          if(val){
-            i.q = val[0];
-            i.o = !!val[1];
-            i.f = !!val[2];
-            i.t = val[3] || '';
-            i.s = !!val[4];
-            i.y = !!val[5];
-            i.u = val[6] || 'יח';
-          }
-        });
-      });
-    }
+    var cache = null;
+    try { cache = JSON.parse(localStorage.getItem('cache_' + node) || 'null'); } catch(e) {}
+    var dirty = localStorage.getItem('dirty_' + node) === '1';
+    var remote = dirty ? null : await fetchFromFirebase(node);
+    if (myToken !== initToken) return;
 
-    $('sync').textContent = 'מסונכרן ✓';
+    applyValues(remote || cache);
+    if (remote) { try { localStorage.setItem('cache_' + node, JSON.stringify(remote)); } catch(e) {} }
+
+    $('sync').textContent = dirty ? 'ממתין לשמירה…' : remote ? 'מסונכרן ✓' : cache ? 'אין רשת – מוצגים נתונים שמורים ⚠' : 'לא נמצאו נתונים ⚠';
+    build();
+    if (dirty) { pendingNode = node; pendingCats = state.cats; flushSave(); }
+    return;
   } catch (e) {
+    if (myToken !== initToken) return;
     $('sync').textContent = 'שגיאה בטעינת הנתונים ⚠';
   }
   build();
 }
+
+function applyValues(items){
+  if(!items) return;
+  state.cats.forEach(function(c){
+    c.items.forEach(function(i){
+      var val = items[(c.n + '|' + i.n).replace(/[\.=#\$\[\]\/]/g, '_')];
+      if(val){ i.q = val[0]; i.o = !!val[1]; i.f = !!val[2]; i.t = val[3] || ''; i.s = !!val[4]; i.y = !!val[5]; i.u = val[6] || 'יח'; }
+    });
+  });
+}
+
+async function flushSave(){
+  clearTimeout(saveTimeout);
+  if(!pendingNode) return;
+  var node = pendingNode, cats = pendingCats;
+  pendingNode = pendingCats = null;
+  var here = function(){ return viewsConfig[currentView].fbNode === node; };
+  if(here()) $('sync').textContent = 'שומר…';
+  var ok = await saveToFirebase(cats, node);
+  if(ok && !pendingNode) localStorage.removeItem('dirty_' + node);
+  if(here() && !pendingNode) $('sync').textContent = ok ? 'מסונכרן ✓' : 'לא נשמר – ינסה שוב כשיהיה חיבור ⚠';
+}
+
+window.addEventListener('online', function(){
+  var node = viewsConfig[currentView].fbNode;
+  if(localStorage.getItem('dirty_' + node) === '1'){ pendingNode = node; pendingCats = state.cats; flushSave(); }
+});
+document.addEventListener('visibilitychange', function(){ if(document.hidden) flushSave(); });
 
 function qtxt(i){
   var isBar = currentView === 'bar';
@@ -362,7 +384,7 @@ function buildText(){
   return out.join('\n');
 }
 
-var counts={}, saveTimeout = null;
+var counts={};
 
 async function updateAndSync(){
   state.cats.forEach(function(c){
@@ -371,14 +393,15 @@ async function updateAndSync(){
   });
   $('pv').textContent=buildText();
 
+  var node = viewsConfig[currentView].fbNode;
+  pendingNode = node; pendingCats = state.cats;
+  try {
+    localStorage.setItem('cache_' + node, JSON.stringify(buildItemsMap(state.cats)));
+    localStorage.setItem('dirty_' + node, '1');
+  } catch(e) {}
   clearTimeout(saveTimeout);
   $('sync').textContent = 'ממתין לשמירה…';
-  var fbNode = viewsConfig[currentView].fbNode;
-  saveTimeout = setTimeout(async function(){
-    $('sync').textContent = 'שומר ל-Firebase…';
-    var ok = await saveToFirebase(state.cats, fbNode);
-    $('sync').textContent = ok ? 'מסונכרן ✓' : 'שגיאה בשמירה ⚠';
-  }, 500);
+  saveTimeout = setTimeout(flushSave, 500);
 }
 
 function fmt(n){return n==null?'':String(n)}
