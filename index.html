@@ -75,6 +75,15 @@ pre{white-space:pre-wrap;word-break:break-word;margin:0;background:var(--card);b
 .toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s; z-index:20;}
 .toast.on{opacity:1;transform:translateX(-50%)}
 button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Tips */
+.tips-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.tips-lbl{font-size:13px;color:var(--muted);margin-bottom:8px}
+.tips-total{width:100%;font-size:24px;font-weight:600;text-align:center}
+.wr{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.wr .wn{flex:1}
+.wr .wh{flex:none;width:68px;text-align:center}
+.wr .wa{flex:none;min-width:54px;text-align:center;font-weight:600;font-size:15px}
+.add-w{width:100%;padding:12px;font-size:16px;font-weight:600}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
 </head>
@@ -84,6 +93,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
   <div class="tabs-bar">
     <button id="tab-kitchen" onclick="switchView('kitchen')">🍳 מטבח</button>
     <button id="tab-bar" onclick="switchView('bar')">🍻 בר</button>
+    <button id="tab-tips" onclick="switchView('tips')">💰 טיפים</button>
   </div>
 
   <!-- Header -->
@@ -98,9 +108,23 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
   </div>
 
   <!-- Search Filter -->
-  <div class="search-box">
+  <div class="search-box" id="search-box">
     <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
     <input type="search" id="search-input" placeholder="חיפוש מהיר..." oninput="filterItems()">
+  </div>
+
+  <!-- Tips view -->
+  <div id="tips-view" hidden>
+    <div class="tips-card">
+      <div class="tips-lbl">💰 סה"כ טיפים</div>
+      <input type="text" id="tips-total" class="tips-total" inputmode="decimal" placeholder="0" aria-label="סך הטיפים">
+    </div>
+    <div class="tips-card">
+      <div class="tips-lbl">👥 עובדים</div>
+      <div id="tips-workers"></div>
+      <button class="btn add-w" id="add-worker">+ הוספת עובד</button>
+    </div>
+    <div class="sub" id="tips-sum" style="text-align:center"></div>
   </div>
 
   <div id="cats"></div>
@@ -128,11 +152,12 @@ function dstr(){var n=new Date();return n.getDate()+'.'+(n.getMonth()+1)}
 
 var state={cats:[]}, initToken=0, pendingNode=null, pendingCats=null, saveTimeout=null;
 var urlParams = new URLSearchParams(window.location.search);
-var currentView = urlParams.get('view') === 'bar' ? 'bar' : 'kitchen';
+var currentView = ['bar','tips'].indexOf(urlParams.get('view')) >= 0 ? urlParams.get('view') : 'kitchen';
 
 var viewsConfig = {
   kitchen: { file: 'hs.json', title: 'מלאי מטבח', fbNode: 'inventory', icon: '🍳' },
-  bar: { file: 'bar.json', title: 'מלאי בר', fbNode: 'inventoryBar', icon: '🍻' }
+  bar: { file: 'bar.json', title: 'מלאי בר', fbNode: 'inventoryBar', icon: '🍻' },
+  tips: { title: 'חישוב טיפים', icon: '💰' }
 };
 
 // Ext Inputs Init
@@ -162,7 +187,7 @@ notesEl.oninput = function() {
 function switchView(view) {
   if (view === currentView) return;
   flushSave();
-  var newUrl = window.location.pathname + (view === 'bar' ? '?view=bar' : '');
+  var newUrl = window.location.pathname + (view !== 'kitchen' ? '?view=' + view : '');
   window.history.pushState({path: newUrl}, '', newUrl);
   currentView = view;
   $('search-input').value = ''; 
@@ -174,6 +199,14 @@ async function init(){
   
   $('tab-kitchen').classList.toggle('active', currentView === 'kitchen');
   $('tab-bar').classList.toggle('active', currentView === 'bar');
+  $('tab-tips').classList.toggle('active', currentView === 'tips');
+
+  var isTips = currentView === 'tips';
+  $('tips-view').hidden = !isTips;
+  $('search-box').hidden = isTips;
+  $('cats').hidden = isTips;
+  $('close-all').hidden = isTips;
+  $('upd').hidden = isTips;
   
   // Show extras only on Bar view
   $('bar-header-extras').style.display = currentView === 'bar' ? 'block' : 'none';
@@ -183,6 +216,12 @@ async function init(){
   document.title = cfg.title;
 
   await flushSave();
+  if (isTips) {
+    initToken++; // מבטל טעינה שמחכה של מטבח/בר
+    $('sync').textContent = '';
+    renderTips();
+    return;
+  }
   var myToken = ++initToken, node = cfg.fbNode;
   $('sync').textContent = 'טוען נתונים…';
   try {
@@ -261,6 +300,7 @@ function qtxt(i){
 function filled(i){return i.q!=null||!!i.o||!!i.f||!!i.y||i.t.trim()!==''}
 
 function buildText(){
+  if(currentView==='tips') return buildTipsText();
   var cfg = viewsConfig[currentView];
   var isBar = currentView === 'bar';
   var out = [];
@@ -611,6 +651,7 @@ function build(){
 }
 
 function updateUI(){
+  if(currentView==='tips'){ $('pv').textContent=buildText(); return; }
   state.cats.forEach(function(c){
     var f=c.items.filter(filled).length,s=c.items.filter(function(i){return i.s}).length;
     if(counts[c.id])counts[c.id].textContent=f+'/'+c.items.length+(s?' · ⚠ '+s:'');
@@ -634,6 +675,77 @@ $('close-all').onclick = function() {
     var catEl = $('cat-' + c.id);
     if (catEl) catEl.open = false;
   });
+};
+
+/* ===== Tips (local only, no database) ===== */
+var tipsData = {total:'', workers:[]};
+if (!tipsData.workers.length) tipsData.workers.push({id:uid(), name:'', hours:''});
+
+function num(v){var s=String(v==null?'':v).trim().replace(',','.');if(s==='')return 0;var n=Number(s);return isFinite(n)?n:0}
+function money(n){return String(Math.round(n*100)/100)}
+
+function tipsCalc(){
+  var total = num(tipsData.total), hrs = 0;
+  tipsData.workers.forEach(function(w){ hrs += num(w.hours); });
+  return {total: total, hours: hrs, rate: hrs > 0 ? total / hrs : 0};
+}
+
+function buildTipsText(){
+  var c = tipsCalc(), out = [];
+  out.push('תאריך: ' + dstr());
+  out.push('שעות כולל: ' + money(c.hours));
+  out.push('סה"כ: ' + money(c.total));
+  out.push('שעתי: ' + money(c.rate));
+  tipsData.workers.forEach(function(w){
+    if (!w.name.trim() && num(w.hours) === 0) return;
+    out.push('');
+    out.push(w.name.trim() || 'עובד');
+    out.push('שעות: ' + money(num(w.hours)));
+    out.push('סה"כ: ' + money(c.rate * num(w.hours)));
+  });
+  return out.join('\n');
+}
+
+function tipsRefresh(){
+  var c = tipsCalc();
+  tipsData.workers.forEach(function(w){
+    var a = $('wa-' + w.id);
+    if (a) a.textContent = money(c.rate * num(w.hours));
+  });
+  $('tips-sum').textContent = 'שעות כולל: ' + money(c.hours) + ' · שעתי: ' + money(c.rate);
+  $('pv').textContent = buildTipsText();
+}
+
+function renderTips(){
+  var box = $('tips-workers'); box.innerHTML = '';
+  $('tips-total').value = tipsData.total;
+  tipsData.workers.forEach(function(w){
+    var row = el('div','wr');
+    var n = document.createElement('input');
+    n.className = 'wn'; n.placeholder = 'שם עובד'; n.value = w.name; n.setAttribute('dir','auto');
+    n.oninput = function(){ w.name = n.value; tipsRefresh(); };
+    var h = document.createElement('input');
+    h.className = 'wh'; h.placeholder = 'שעות'; h.value = w.hours; h.setAttribute('inputmode','decimal'); h.setAttribute('aria-label','שעות');
+    h.onfocus = function(){ h.select(); };
+    h.oninput = function(){ w.hours = h.value; tipsRefresh(); };
+    var a = el('span','wa','0'); a.id = 'wa-' + w.id;
+    var d = el('button','sq','✕'); d.setAttribute('aria-label','מחק עובד');
+    d.onclick = function(){
+      tipsData.workers = tipsData.workers.filter(function(x){ return x !== w; });
+      renderTips();
+    };
+    row.appendChild(n); row.appendChild(h); row.appendChild(a); row.appendChild(d);
+    box.appendChild(row);
+  });
+  tipsRefresh();
+}
+
+$('tips-total').oninput = function(){ tipsData.total = this.value; tipsRefresh(); };
+$('add-worker').onclick = function(){
+  tipsData.workers.push({id:uid(), name:'', hours:''});
+  renderTips();
+  var ins = $('tips-workers').querySelectorAll('.wn');
+  if (ins.length) ins[ins.length-1].focus();
 };
 
 init();
