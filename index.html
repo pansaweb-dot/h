@@ -37,11 +37,13 @@ button:disabled{opacity:.55}
 .ext-input { width:100%; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-family: inherit; font-size: 15px; background: var(--card); color: var(--ink); outline:none; transition: border-color 0.2s; resize: none; overflow: hidden; }
 .ext-input:focus { border-color: var(--accent); }
 
-/* Search Box */
-.search-box { position:sticky; top:8px; z-index:5; box-shadow:0 2px 8px rgba(0,0,0,.06); display: flex; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; margin-bottom: 16px; gap: 10px; transition: border-color 0.2s; }
+/* Search Box & Sticky Bar */
+.sticky-bar { position: sticky; top: 8px; z-index: 5; display: flex; gap: 8px; margin-bottom: 16px; align-items: stretch; }
+.search-box { flex: 1; box-shadow: 0 2px 8px rgba(0,0,0,.06); display: flex; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; gap: 10px; transition: border-color 0.2s; }
 .search-box:focus-within { border-color: var(--accent); }
 .search-box input { flex: 1; border: none; background: transparent; outline: none; font-size: 15px; color: var(--ink); font-family: inherit; }
 .search-box svg { width: 20px; height: 20px; fill: var(--muted); flex-shrink: 0; }
+.sticky-bar .btn { border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); white-space: nowrap; flex-shrink: 0; }
 
 /* Categories & Items */
 details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
@@ -99,7 +101,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
   <!-- Header -->
   <header>
     <div><h1 id="ttl"></h1><div class="sub" id="sync">טוען נתונים…</div></div>
-    <div class="hb"><button class="btn" id="close-all">סגור הכל ⏶</button><button class="btn" id="upd">רענן 🔄</button></div>
+    <div class="hb"><button class="btn" id="upd">רענן 🔄</button></div>
   </header>
 
   <!-- Bar Specific Extras (Manager Name) -->
@@ -107,10 +109,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
     <input type="text" id="bar-manager" placeholder="👤 אחראי סגירה (שם)..." class="ext-input">
   </div>
 
-  <!-- Search Filter -->
-  <div class="search-box" id="search-box">
-    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-    <input type="search" id="search-input" placeholder="חיפוש מהיר..." oninput="filterItems()">
+  <!-- Search Filter & Close All -->
+  <div class="sticky-bar" id="search-box">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input type="search" id="search-input" placeholder="חיפוש מהיר..." oninput="filterItems()">
+    </div>
+    <button class="btn" id="close-all">סגור הכל ⏶</button>
   </div>
 
   <!-- Tips view -->
